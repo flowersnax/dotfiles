@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell.Services.Pipewire
 import Quickshell.Services.UPower
 import qs.theme
+import qs.components
 
 //unified system status indicator for audio and power
 Rectangle {
@@ -40,13 +41,9 @@ Rectangle {
       id: volumeModule
       spacing: 8
 
-      Text {
+      StyledText {
         id: volumeIcon
         anchors.horizontalCenter: parent.horizontalCenter
-        font {
-          family: Style.fontFamily
-          pointSize: Style.fontSize
-        }
         color: root.isMuted ? Style.colRed_alt : Style.colMuted
 
         text: {
@@ -62,14 +59,10 @@ Rectangle {
         }
       }
 
-      Text {
+      StyledText {
         id: volumeLabel
         anchors.horizontalCenter: parent.horizontalCenter
         color: Style.colMuted
-        font {
-          family: Style.fontFamily
-          pointSize: Style.fontSize
-        }
         text: root.activeSink?.audio ? Math.round(root.volumeLevel * 100) + "%" : "--%"
       }
 
@@ -103,13 +96,9 @@ Rectangle {
 
       visible: isVisible
 
-      Text {
+      StyledText {
         id: batteryIcon
         anchors.horizontalCenter: parent.horizontalCenter
-        font {
-          family: Style.fontFamily
-          pointSize: Style.fontSize
-        }
 
         //color logic: alert user if charging (active state) or critically low
         color: (batteryModule.isCharging && batteryModule.capacity < 100) || batteryModule.capacity <= 20 ? Style.colRed : Style.colMuted
@@ -135,14 +124,10 @@ Rectangle {
         }
       }
 
-      Text {
+      StyledText {
         id: batteryLabel
         anchors.horizontalCenter: parent.horizontalCenter
         color: Style.colMuted
-        font {
-          family: Style.fontFamily
-          pointSize: Style.fontSize
-        }
         text: Math.round(batteryModule.capacity) + "%"
       }
     }

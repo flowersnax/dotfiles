@@ -3,8 +3,9 @@
 
 import Quickshell
 import QtQuick
-import qs.bar //no idea why (YET) but putting the bar stuff in its own folder and importing *that* makes the color work?
+import "bar" //no idea why (YET) but putting the bar stuff in its own folder and importing *that* makes the color work?
 import qs.services
+import "utilities/launcher"
 
 //a LOT of the base of these dotfiles were referenced from octagonemusic's octashell
 //it's a good learning tool imo :)
@@ -37,5 +38,9 @@ ShellRoot {
   //system status bar
   LeftBar {
     id: leftBar
+  }
+
+  Launcher {
+    id: launcherWindow
   }
 }

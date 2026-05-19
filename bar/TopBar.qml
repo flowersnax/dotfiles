@@ -29,23 +29,23 @@ Variants {
     implicitHeight: Style.barThickness / 1.5
     color: "transparent"
 
-   SysTray {
-     id: systemTray
-     anchors {
-       left: parent.left
-       leftMargin: 100
-       top: parent.top
-       topMargin: 8
-     }
+    SysTray {
+      id: systemTray
+      anchors {
+        left: parent.left
+        leftMargin: 132
+        top: parent.top
+        topMargin: 10
+      }
     }
 
-    Media {
+    Media { //not sure when or how, but the weird bug i was having with the 
+            //song progress indicator resolved itself on its own?
       id: nowPlaying
       anchors {
         horizontalCenter: parent.horizontalCenter
         verticalCenter: parent.verticalCenter
       }
     }
-
   }
 }

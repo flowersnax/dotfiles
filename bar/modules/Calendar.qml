@@ -1,6 +1,7 @@
 import QtQuick
 import qs.services
 import qs.theme
+import qs.components
 
 //reactive clock component that displays the system time in styled container
 Rectangle {
@@ -22,7 +23,7 @@ Rectangle {
   }
 
   //renders the current time string provided by the global Time service
-  Text {
+  StyledText {
     id: timeLabel
 
     anchors.centerIn: parent
@@ -32,8 +33,7 @@ Rectangle {
     color: Style.colMuted
 
     font {
-      family: Style.fontFamily
-      pointSize: 8
+      pointSize: Style.fontSmall
     }
   }
 }

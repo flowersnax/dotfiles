@@ -24,10 +24,10 @@ Item {
     color: Style.colBg
     anchors.fill: parent
     anchors.bottom: parent.bottom
-    anchors.bottomMargin: 6
+    anchors.top: parent.top
     transform: [
       Shear { xFactor: 0.5 },
-      Translate { x: -14 }
+      Translate { x: -14; y: -4 }
     ]
   }
 

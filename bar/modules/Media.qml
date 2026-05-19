@@ -8,6 +8,7 @@ import QtQuick.Controls
 import QtQuick.Effects
 import qs.theme
 import qs.services
+import qs.components
 
 //copied most of this from PartyWumpus's dotfiles on github, so shoutout to them :)
 
@@ -175,6 +176,7 @@ WrapperItem {
                   IconImage {
                     id: mediaPlayerIcon
                     anchors.fill: parent
+                    implicitSize: 30
                     source: Quickshell.iconPath(DesktopEntries.heuristicLookup(media.player.identity)?.icon ?? "", "../../icons/musicnote.png")
                     asynchronous: true
                   }
@@ -187,10 +189,9 @@ WrapperItem {
               anchors.bottom: parent.bottom
               anchors.right: parent.right
               rightMargin: 1
-              Text {
+              StyledText {
                 font.pointSize: 8
                 font.bold: true
-                font.family: Style.fontFamily
                 color: Style.colMuted
                 text: {
                   `// ${root.lengthStr(media.player.position)}/${root.lengthStr(media.player.length)}`;
@@ -206,14 +207,9 @@ WrapperItem {
               WrapperItem {
                 anchors.bottom: parent.bottom
                 leftMargin: 8
-                Text {
+                StyledText {
                   id: songInfo
                   text: MprisInfo.artist + " ~ " + MprisInfo.title
-                  color: Style.colFg
-                  font {
-                    family: Style.fontFamily
-                    pointSize: Style.fontSize
-                  }
 
                   SequentialAnimation {
                     running: infoWrapper.width - songInfo.width < 0

@@ -42,7 +42,7 @@ Variants {
 
       anchors {
         top: parent.top
-        topMargin: 16
+        topMargin: Style.spacerMedium
         horizontalCenter: parent.horizontalCenter
       }
     }
@@ -51,7 +51,15 @@ Variants {
     //ideally wanna have that window preview thing that caelestia's got going on
     //but that's way out of my depth at the moment lmao
 
-    
+    //as an update, after a couple days of fighting for my goddamn life i managed
+    //to get a preview that looks halfway decent
+    WindowInfo {
+      id: windowModule
+      anchors.bottom: calendarModule.top
+      anchors.bottomMargin: Style.spacerMedium
+      anchors.right: parent.right
+      anchors.rightMargin: Style.spacerSmall
+    }
 
     //calendar
     Calendar {
@@ -70,7 +78,7 @@ Variants {
 
       anchors{
         bottom: parent.bottom
-        bottomMargin: 16
+        bottomMargin: Style.paddingLarge
         horizontalCenter: parent.horizontalCenter
       }
     }

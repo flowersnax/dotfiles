@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell.Hyprland
+import Quickshell.Wayland
 import qs.theme
 
 
@@ -52,12 +53,12 @@ Rectangle {
 
               color: {
                 if (modelData.focused)
-                  return Style.colMuted ?? "#ffffff";
+                  return Style.colMuted;
                 return dotMouseArea.hovered ? Style.colGreen : Style.colBg_alt;
               }
 
               text: {
-                if (modelData.focused || modelData.active || dotMouseArea.hovered)
+                if (modelData.focused || modelData.active || dotMouseArea.hovered || (modelData.toplevels.values?.length != 0 || null))
                   return "★";
                 return "☆";
               }

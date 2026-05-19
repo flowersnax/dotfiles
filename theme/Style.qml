@@ -6,6 +6,7 @@ import QtQuick
 Singleton {
   id: root
 
+  //colors
   property color colBg: "#211f21"
   property color colBg_alt: "#37343a"
   property color colFg: "#e3e1e4"
@@ -23,9 +24,12 @@ Singleton {
   property color colPurple: "#ab9df2"
   property color colPurple_alt: "#433d51"
 
-  //font
+  //font styling
   property string fontFamily: "Monocraft"
   property int fontSize: 10
+  property int fontSmall: 8
+  property int fontLarge: 14
+  property int fontHuge: 20
 
   //margins 
   property int barThickness: 64
@@ -33,6 +37,17 @@ Singleton {
   property int innerTopBarThickness: 50
   property int padding: 4
   property int modulePadding: 12
+
+  //padding sizes
+  property int paddingSmall: 4
+  property int paddingMedium: 8
+  property int paddingLarge: 16
+  property int paddingHuge: 20
+
+  //spacers 
+  property int spacerLarge: 100
+  property int spacerMedium: 50
+  property int spacerSmall: 30
 
   property int cornerRadius: 4
 
