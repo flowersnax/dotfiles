@@ -99,29 +99,4 @@ Item {
       event.accepted = true 
     }
   }
-  /*MouseArea { //unimplimented atm
-    anchors.fill: parent
-    acceptedButtons: Qt.RightButton
-    hoverEnabled: true
-
-    onClicked: {
-      if (popout.isVisible)
-        popout.hide()
-      else
-        popout.show()
-    }
-  }
-  HoverHandler {
-    id: hover
-  }
-  StyledPopout {
-    id: popout
-    hoverTarget: hover
-    interactable: true
-    hCenterOnItem: true
-    requiresHover: true
-    Component {
-      WorkspacePreview {}
-    }
-  }*/
 }
