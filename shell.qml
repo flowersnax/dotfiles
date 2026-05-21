@@ -6,6 +6,9 @@ import QtQuick
 import "bar" //no idea why (YET) but putting the bar stuff in its own folder and importing *that* makes the color work?
 import qs.services
 import "utilities/launcher"
+//import "vgen"
+//import "landing"
+import "notifications"
 
 //a LOT of the base of these dotfiles were referenced from octagonemusic's octashell
 //it's a good learning tool imo :)
@@ -40,7 +43,19 @@ ShellRoot {
     id: leftBar
   }
 
-  Launcher {
-    id: launcherWindow
+  NotifPopup {
+    id: notificationOverlay
   }
+
+  //Launcher {
+  //  id: launcherWindow
+  //}
+
+  //landing page -- unimplimented
+  //Landing {
+  //  id: landing
+  //}
+
+  //vgen management workspace -- wip
+  //Vgen {}
 }

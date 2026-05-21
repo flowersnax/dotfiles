@@ -1,0 +1,490 @@
+import Quickshell
+import Quickshell.Wayland
+import Quickshell.Hyprland
+import QtQuick
+import QtQuick.Effects
+import QtQuick.Shapes
+import qs.theme
+import qs.components
+
+//renders a stack of transient desktop notifs on the focused monitor
+//code from octashell
+
+Variants {
+  id: root
+  model: Quickshell.screens
+
+  //track hovered state of notification
+  property int hoveredNotificationId: -1
+
+  delegate: PanelWindow {
+    id: notificationPopup
+
+    //screen & model configs
+    required property var modelData
+    screen: modelData
+
+    ListModel {
+      id: activeNotifications
+    }
+
+    function disposeNotification(notificationId) {
+      for (let i = 0; i < activeNotifications.count; i++) {
+        if (activeNotifications.get(i).notificationEntry.id === notificationId) {
+          activeNotifications.remove(i, 1);
+          break;
+        }
+      }
+    }
+
+    visible: true
+    property bool hasNotifications: activeNotifications.count > 0
+
+    Timer {
+      id: exitTimer
+      interval: 350
+      running: !hasNotifications
+    }
+
+    readonly property bool surfaceMapped: hasNotifications || exitTimer.running
+
+    property real stableHeight: 0
+    Binding on stableHeight {
+      when: hasNotifications
+      value: notificationStack.contentHeight + 40
+    }
+
+    implicitWidth: surfaceMapped ? 390 : 0
+    implicitHeight: surfaceMapped ? stableHeight : 0
+
+    //layershell properties
+    WlrLayershell.layer: WlrLayer.Overlay
+    WlrLayershell.namespace: "notification_overlay"
+    WlrLayershell.exclusionMode: ExclusionMode.Ignore
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+    color: "transparent"
+
+    anchors {
+      top: true
+      right: true
+    }
+    margins {
+      top: 40
+      right: 5
+    }
+
+    //notification service integration
+    Connections {
+      target: CentralNotifServer
+
+      function onNotification(notification) {
+        let existingIndex = -1;
+        for (let i = 0; i < activeNotifications.count; i++) {
+          if (activeNotifications.get(i).notificationEntry.id === notification.id) {
+            existingIndex = i;
+            break;
+          }
+        }
+
+        if (existingIndex !== -1) {
+          activeNotifications.setProperty(existingIndex, "notificationEntry", notification);
+        } else {
+          activeNotifications.insert(0, {
+            "notificationEntry": notification
+          });
+        }
+      }
+    }
+
+    //notification stack layout
+    ListView {
+      id: notificationStack
+
+      visible: {
+        const isFocused = Hyprland.focusedMonitor && modelData.name === Hyprland.focusedMonitor.name;
+        return isFocused && activeNotifications.count > 0;
+      }
+
+      width: 350
+      height: contentHeight
+      interactive: false
+      spacing: 12
+      anchors {
+        top: parent.top
+        right: parent.right
+        topMargin: 20
+        rightMargin: 20
+      }
+
+      model: activeNotifications
+      delegate: notificationDelegate
+
+      add: Transition {
+        ParallelAnimation {
+          NumberAnimation {
+            property: "x"
+            from: 390
+            to: 0
+            duration: 350
+            easing.type: Easing.OutBack
+            easing.overshoot: 1.05
+          }
+          NumberAnimation {
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 250
+          }
+        }
+      }
+
+      remove: Transition {
+        ParallelAnimation {
+          NumberAnimation {
+            property: "x"
+            to: 390
+            duration: 350
+            easing.type: Easing.InBack
+            easing.overshoot: 1.1
+          }
+          NumberAnimation {
+            property: "opacity"
+            to: 0
+            duration: 250
+          }
+        }
+      }
+
+    displaced: Transition {
+      NumberAnimation {
+        properties: "y"
+        duration: 350
+        easing.type: Easing.OutBack
+        easing.overshoot: 1.05
+      }
+    }
+  }
+
+  //notification item delegate
+  Component {
+    id: notificationDelegate
+
+    Item {
+      id: delegateContainer
+      width: 350
+      height: notificationCard.height + 20
+
+      required property var notificationEntry
+      readonly property string applicationName: notificationEntry.appName || "Notification"
+      readonly property var applicationIcon: notificationEntry.image || notificationEntry.appIcon || ""
+      property real lifeSpanProgress: 1.0
+
+      Connections {
+        target: notificationEntry
+        function onClosed(reason) {
+          notificationPopup.disposeNotification(notificationEntry.id);
+        }
+      }
+
+      //automatic expiration timer
+      NumberAnimation {
+        id: expiryTimer
+        target: delegateContainer
+        property: "lifeSpanProgress"
+        from: 1.0
+        to: 0.0
+        duration: 7000
+        running: true
+
+        paused: root.hoveredNotificationId === notificationEntry.id
+
+        onFinished: {
+          if (lifeSpanProgress <= 0.01) {
+            if (notificationPopup.visible) {
+              notificationEntry.expire();
+            }
+          }
+        }
+      }
+
+      //notification card
+      Rectangle {
+        id: notificationCard
+        width: parent.width
+        height: layoutContent.implicitHeight + 32
+        y: 4
+        radius: 6
+        border.width: 1
+        border.color: Style.colMuted
+
+        color: interactionArea.containsMouse ? Qt.lighter(Style.colBg, 1.04) : Style.colBg
+        scale: interactionArea.pressed ? 0.96 : 1.0
+
+        layer.enabled: true
+        layer.effect: MultiEffect {
+          shadowEnabled: true
+          shadowColor: "#40000000"
+
+          blurMax: 32
+          shadowBlur: interactionArea.containsMouse ? 0.5 : 0.2
+          shadowVerticalOffset: interactionArea.containsMouse ? 6 : 2
+
+          Behavior on shadowBlur {
+            NumberAnimation {
+              duration: 250
+              easing.type: Easing.OutBack
+            }
+          }
+
+          Behavior on shadowVerticalOffset {
+            NumberAnimation {
+              duration: 250
+              easing.type: Easing.OutBack
+            }
+          }
+        }
+
+        Behavior on color {
+          ColorAnimation {
+            duration: 150
+          }
+        }
+
+        Behavior on scale {
+          NumberAnimation {
+            duration: 250
+            easing.type: Easing.OutBack
+          }
+        }
+
+        MouseArea {
+          id: interactionArea
+          anchors.fill: parent
+          hoverEnabled: true
+          cursorShape: Qt.PointingHandCursor
+
+          onEntered: root.hoveredNotificationId = notificationEntry.id
+          onExited: {
+            if (root.hoveredNotificationId === notificationEntry.id) {
+              root.hoveredNotificationId = -1;
+            }
+          }
+
+          onClicked: {
+            let invoked = false;
+
+            if (notificationEntry.actions) {
+              for (let i = 0; i < notificationEntry.actions.length; i++) {
+                if (notificationEntry.actions[i].identifier === "default") {
+                  notificationEntry.actions[i].invoke();
+                  invoked = true;
+                  break;
+                }
+              }
+            }
+
+            if (!invoked) {
+              notificationEntry.dismiss();
+            }
+          }
+        }
+
+        Column {
+          id: layoutContent
+          width: parent.width - 32
+          anchors.centerIn: parent
+          spacing: 12
+
+          Item {
+            width: parent.width
+            height: Math.max(iconWrapper.height, textStack.implicitHeight)
+
+            Item {
+              id: iconWrapper
+              width: 48
+              height: 48
+              anchors {
+                left: parent.left
+                top: parent.top
+              }
+
+              //fallback icon/initial state
+              Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: Style.colBg_alt
+                visible: !delegateContainer.applicationIcon
+
+                Text {
+                  anchors.centerIn: parent
+                  text: "!"
+                  color: Style.colMuted
+                  font {
+                    family: Style.fontFamily
+                    pointSize: 24
+                    bold: true
+                  }
+                }
+              }
+
+              Rectangle {
+                id: circleMask
+                width: iconWrapper.width
+                height: iconWrapper.height
+                radius: width / 2
+                color: "black"
+                visible: false
+                layer.enabled: true
+                layer.smooth: true
+              }
+
+              Image {
+                id: iconSrc
+                anchors.fill: parent
+                source: delegateContainer.applicationIcon
+                fillMode: Image.PreserveAspectCrop
+                visible: !!delegateContainer.applicationIcon
+
+                layer.enabled: true
+                layer.smooth: true
+                layer.effect: MultiEffect {
+                  maskEnabled: true
+                  maskSource: circleMask
+                  maskThresholdMin: 0.5
+                  maskSpreadAtMin: 1.0
+                }
+              }
+            }
+
+            Column {
+              id: textStack
+              spacing: 4
+              anchors {
+                left: iconWrapper.right
+                right: closeAction.left
+                top: parent.top
+                leftMargin: 12
+                rightMargin: 8
+              }
+
+              StyledText {
+                text: delegateContainer.applicationName
+                font {
+                  pointSize: 13
+                }
+                width: parent.width
+              }
+              StyledText {
+                text: notificationEntry.summary
+                font {
+                  pointSize: 17
+                  bold: true
+                }
+                width: parent.width
+                elide: Text.ElideRight
+              }
+              StyledText {
+                text: notificationEntry.body
+                font {
+                  pointSize: 15
+                }
+                width: parent.width
+                wrapMode: Text.WordWrap
+              }
+            }
+
+            Rectangle {
+              id: closeAction
+              width: 28
+              height: 28
+              radius: 14
+              color: "transparent"
+              anchors {
+                top: parent.top
+                right: parent.right
+              }
+
+              Behavior on color {
+                ColorAnimation {
+                  duration: 150
+                }
+              }
+
+              Shape {
+                id: countdownRing
+                anchors.fill: parent
+                antialiasing: true
+                preferredRendererType: Shape.CurveRenderer
+
+                ShapePath {
+                  fillColor: "transparent"
+                  strokeColor: Style.colRed
+                  strokeWidth: 3
+                  capStyle: ShapePath.RoundCap
+
+                  PathAngleArc {
+                    centerX: closeAction.width / 2
+                    centerY: closeAction.height / 2
+                    radiusX: (closeAction.width / 2) - 2.5
+                    radiusY: (closeAction.height / 2) - 2.5
+                    startAngle: -90
+                    sweepAngle: delegateContainer.lifeSpanProgress * 360
+                  }
+                }
+              }
+
+              Item {
+                anchors.centerIn: parent
+                width: 12
+                height: 12
+                rotation: 45
+
+                Rectangle {
+                  width: 2
+                  height: parent.height
+                  anchors.centerIn: parent
+                  radius: 1
+                  color: closeMouseArea.containsMouse ? Style.colMuted : Style.colBg_alt
+                  antialiasing: true
+                  Behavior on color {
+                    ColorAnimation {
+                      duration: 150
+                    }
+                  }
+                }
+                Rectangle {
+                  width: parent.width
+                  height: 2
+                  anchors.centerIn: parent
+                  radius: 1
+                  color: closeMouseArea.containsMouse ? Style.colMuted : Style.colBg_alt
+                  antialiasing: true
+                  Behavior on color {
+                    ColorAnimation {
+                      duration: 150
+                    }
+                  }
+                }
+              }
+
+              MouseArea {
+                id: closeMouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onEntered: closeAction.color = Qt.rgba(Style.colBg_alt.r, Style.colBg_alt.g, Style.colBg_alt.b, 0.4)
+                onExited: closeAction.color = "transparent"
+                onClicked: event => {
+                  event.accepted = true;
+                  notificationEntry.dismiss();
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+}
