@@ -1,0 +1,112 @@
+import QtQuick
+import QtQuick.Layouts
+import QtQml.Models
+import Quickshell.Wayland
+import Quickshell.Hyprland
+import qs.theme
+import qs.services
+import qs.components
+
+//referenced whisker by corecathx for a lot of this
+
+Item {
+  id: root
+  property string targetMonitor: Hyprland.focusedMonitor.name
+  implicitWidth: Style.innerTopBarThickness
+  implicitHeight: mainLayout.height + 24
+
+  //config
+
+  Rectangle {
+    radius: 6
+    color: Style.colBg
+    anchors.fill: parent
+    transform: [
+      Shear { yFactor: 0.5 },
+      Translate { y: -8 }
+    ]
+  }
+
+  Column {
+    id: mainLayout
+    anchors.centerIn: parent
+    spacing: Style.spacingAmount
+    Repeater { 
+      model: Hyprland.workspaces
+      //property var modelData
+
+      delegate: Rectangle {
+        id: workspaceDot
+        width: 20
+        height: 20
+        anchors.horizontalCenter: parent.horizontalCenter
+        visible:modelData.id >= 1 && modelData.monitor?.name === root.targetMonitor //in rewriting this i kinda broke the per-monitor workspace indicator. oops
+        color: "transparent"
+        Text {
+          height: Style.dotHeight
+          anchors.centerIn: parent
+          font.bold: modelData.focused ? true : false
+          font.family: Style.fontFamily
+          font.pointSize: modelData.focused ? 22 : dotMouseArea.containsMouse ? 20 : 18
+          color: modelData.focused ? Style.colMuted : dotMouseArea.containsMouse ? Style.colGreen : Style.colBg_alt
+          text: modelData.focused && modelData.monitor?.name === root.targetMonitor ? "★" 
+	        : modelData.toplevels.values > 0 ? "★"
+		: (modelData?.name == "landing") ? "󰋜" 
+		: (modelData?.name == "vgen") ? "" 
+	        : (modelData?.name == "special:communication") ? ""
+	        : (modelData?.name == "special:music") ? "󰎇" 
+		: "☆"
+
+          Behavior on font.pointSize {
+            NumberAnimation {
+              duration: Style.animDurationLong
+              easing.type: Easing.OutBack
+            }
+          }
+
+          Behavior on color {
+            ColorAnimation {
+              duration: Style.animDurationShort
+            }
+          }
+        }
+
+        MouseArea {
+          id: dotMouseArea
+          hoverEnabled: true
+          anchors.fill: parent
+          cursorShape: Qt.PointingHandCursor
+          onClicked: modelData.activate() //if (modelData.id !== id) Hyprland.dispatch(`hl.dsp.focus({ workspace = ${id} })`)
+        }
+      }
+    }
+  }
+
+  WheelHandler {
+    id: wheel
+    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+    target: root
+    property real accumulatedDelta: 0
+    property real threshold: 100
+
+    onWheel: (event) => {
+      const total = modelData
+      const current = Hyprland.focusedWorkspace.id
+
+      accumulatedDelta += event.angleDelta.y
+
+      if (Math.abs(accumulatedDelta) >= threshold) {
+        if (accumulatedDelta > 0) {
+            Hyprland.dispatch(`hl.dsp.focus({workspace = "-1" })`)
+        }
+            if (accumulatedDelta < 0) {
+              Hyprland.dispatch(`hl.dsp.focus({ workspace = "+1" })`)
+          }
+          
+          accumulatedDelta = 0
+      }
+
+      event.accepted = true 
+    }
+  }
+}
