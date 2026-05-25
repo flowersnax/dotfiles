@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQml.Models
 import Quickshell.Wayland
+import Quickshell.Hyprland
 import qs.theme
 import qs.services
 import qs.components
@@ -10,6 +11,7 @@ import qs.components
 
 Item {
   id: root
+  property string targetMonitor: Hyprland.focusedMonitor.name
   implicitWidth: Style.innerTopBarThickness
   implicitHeight: mainLayout.height + 24
 
@@ -30,23 +32,30 @@ Item {
     anchors.centerIn: parent
     spacing: Style.spacingAmount
     Repeater { 
-      model: Hyprland.fullWorkspaces
+      model: Hyprland.workspaces
+      //property var modelData
 
       delegate: Rectangle {
         id: workspaceDot
         width: 20
         height: 20
         anchors.horizontalCenter: parent.horizontalCenter
-        //visible: //in rewriting this i kinda broke the per-monitor workspace indicator. oops
+        visible:modelData.id >= 1 && modelData.monitor?.name === root.targetMonitor //in rewriting this i kinda broke the per-monitor workspace indicator. oops
         color: "transparent"
         Text {
           height: Style.dotHeight
           anchors.centerIn: parent
-          font.bold: focused ? true : false
+          font.bold: modelData.focused ? true : false
           font.family: Style.fontFamily
-          font.pointSize: focused ? 22 : dotMouseArea.containsMouse ? 20 : 18
-          color: focused ? Style.colMuted : dotMouseArea.containsMouse ? Style.colGreen : Style.colBg_alt
-          text: (focused || dotMouseArea.containsMouse || Hyprland.toplevels > 0) ? "★" : (modelData?.name == "landing") ? "󰋜" : (modelData?.name == "vgen") ? "" : "☆"
+          font.pointSize: modelData.focused ? 22 : dotMouseArea.containsMouse ? 20 : 18
+          color: modelData.focused ? Style.colMuted : dotMouseArea.containsMouse ? Style.colGreen : Style.colBg_alt
+          text: modelData.focused && modelData.monitor?.name === root.targetMonitor ? "★" 
+	        : modelData.toplevels.values > 0 ? "★"
+		: (modelData?.name == "landing") ? "󰋜" 
+		: (modelData?.name == "vgen") ? "" 
+	        : (modelData?.name == "special:communication") ? ""
+	        : (modelData?.name == "special:music") ? "󰎇" 
+		: "☆"
 
           Behavior on font.pointSize {
             NumberAnimation {
@@ -67,7 +76,7 @@ Item {
           hoverEnabled: true
           anchors.fill: parent
           cursorShape: Qt.PointingHandCursor
-          onClicked: if (Hyprland.activeWsId !== id) Hyprland.dispatch(`hl.dsp.focus({ workspace = ${id} })`)
+          onClicked: modelData.activate() //if (modelData.id !== id) Hyprland.dispatch(`hl.dsp.focus({ workspace = ${id} })`)
         }
       }
     }
@@ -81,17 +90,16 @@ Item {
     property real threshold: 100
 
     onWheel: (event) => {
-      const total = Hyprland.fullWorkspaces.count
+      const total = modelData
       const current = Hyprland.focusedWorkspace.id
 
       accumulatedDelta += event.angleDelta.y
 
       if (Math.abs(accumulatedDelta) >= threshold) {
         if (accumulatedDelta > 0) {
-          if (current > 1)
             Hyprland.dispatch(`hl.dsp.focus({workspace = "-1" })`)
-          } else {
-            if (current < total)
+        }
+            if (accumulatedDelta < 0) {
               Hyprland.dispatch(`hl.dsp.focus({ workspace = "+1" })`)
           }
           
