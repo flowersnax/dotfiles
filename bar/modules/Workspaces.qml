@@ -4,6 +4,7 @@ import QtQml.Models
 import Quickshell.Wayland
 import qs.theme
 import qs.services
+import qs.components
 
 //referenced whisker by corecathx for a lot of this
 
@@ -36,6 +37,7 @@ Item {
         width: 20
         height: 20
         anchors.horizontalCenter: parent.horizontalCenter
+        //visible: //in rewriting this i kinda broke the per-monitor workspace indicator. oops
         color: "transparent"
         Text {
           height: Style.dotHeight
@@ -44,7 +46,7 @@ Item {
           font.family: Style.fontFamily
           font.pointSize: focused ? 22 : dotMouseArea.containsMouse ? 20 : 18
           color: focused ? Style.colMuted : dotMouseArea.containsMouse ? Style.colGreen : Style.colBg_alt
-          text: (focused || dotMouseArea.containsMouse || Hyprland.toplevels > 0) ? "★" : "☆"
+          text: (focused || dotMouseArea.containsMouse || Hyprland.toplevels > 0) ? "★" : (modelData?.name == "landing") ? "󰋜" : (modelData?.name == "vgen") ? "" : "☆"
 
           Behavior on font.pointSize {
             NumberAnimation {
@@ -65,7 +67,7 @@ Item {
           hoverEnabled: true
           anchors.fill: parent
           cursorShape: Qt.PointingHandCursor
-          onClicked: if (Hyprland.activeWsId !== id) Hyprland.dispatch(`workspace ${id}`)
+          onClicked: if (Hyprland.activeWsId !== id) Hyprland.dispatch(`hl.dsp.focus({ workspace = ${id} })`)
         }
       }
     }
@@ -87,10 +89,10 @@ Item {
       if (Math.abs(accumulatedDelta) >= threshold) {
         if (accumulatedDelta > 0) {
           if (current > 1)
-            Hyprland.dispatch("workspace -1")
+            Hyprland.dispatch(`hl.dsp.focus({workspace = "-1" })`)
           } else {
             if (current < total)
-              Hyprland.dispatch("workspace +1")
+              Hyprland.dispatch(`hl.dsp.focus({ workspace = "+1" })`)
           }
           
           accumulatedDelta = 0
