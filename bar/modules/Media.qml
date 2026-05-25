@@ -171,7 +171,7 @@ WrapperItem {
                   implicitWidth: 30
                   hoverEnabled: true
                   onClicked: () => {
-                    Hyprland.dispatch(`togglespecialworkspace music`);
+                    Hyprland.dispatch(`hl.dsp.workspace.toggle_special('music')`);
                   }
                   IconImage {
                     id: mediaPlayerIcon
@@ -209,7 +209,7 @@ WrapperItem {
                 leftMargin: 8
                 StyledText {
                   id: songInfo
-                  text: MprisInfo.artist + " ~ " + MprisInfo.title
+                  text: player.trackArtist + " ~ " + player.trackTitle
 
                   SequentialAnimation {
                     running: infoWrapper.width - songInfo.width < 0
